@@ -1,0 +1,787 @@
+/* Layout: one screen, built to give the jug as much room as possible. A framed chalkboard
+   scoreboard hangs above, the glass jug stands on a timber shelf that carries the name and
+   the fruit lineup, all against a wall of old boards. */
+:root {
+  --bg: #c39158;
+  --ink: #2b1a0d;
+  --danger: #c8201c;
+  --glass: rgba(255, 249, 238, 0.45);
+  --glass-wall: rgba(255, 251, 244, 0.55);
+  --glass-line: rgba(60, 32, 12, 0.5);
+  --glass-shine: rgba(255, 255, 255, 0.95);
+  --floor-shadow: rgba(50, 25, 8, 0.5);
+
+  --wood-tones: #c99a62 #c18f57 #d0a46c #bb874f #c69460;
+  --wood-hi: rgba(255, 236, 205, 0.35);
+  --wood-lo: rgba(70, 38, 12, 0.28);
+  --wood-grain: #7a4a22;
+  --wood-grain-hi: #e6bf8a;
+  --wood-seam: #4a2c14;
+  --wood-seam-hi: rgba(255, 230, 190, 0.35);
+  --wood-knot: #6b3f1c;
+  --wood-light: rgba(255, 240, 210, 0.38);
+  --wood-vignette: rgba(60, 30, 10, 0.4);
+
+  --sign: #f8e6c6;
+  --sign-shadow: rgba(20, 8, 2, 0.55);
+
+  --slate: #263029;
+  --slate-hi: #35413a;
+  --chalk: #f4efe4;
+  --chalk-soft: rgba(244, 239, 228, 0.64);
+  --chalk-faint: rgba(244, 239, 228, 0.18);
+  --frame: #8a5a31;
+  --frame-dark: #4f3018;
+
+  --shelf-top: #a0703f;
+  --shelf: #6e4526;
+  --shelf-dark: #4a2c15;
+
+  --paper: #fcf6ea;
+  --paper-ink: #2b1a0d;
+  --paper-soft: #6b5240;
+  --paper-line: #e2d2b6;
+  --tomato: #c53b2a;
+  --tomato-ink: #fff6ea;
+  --gingham: rgba(197, 59, 42, 0.42);
+  --marigold: #ffc43d;
+  --marigold-ink: #2a1a05;
+  --enamel-rim: #24324d;
+
+  --scrim: rgba(43, 26, 13, 0.42);
+  --shadow: rgba(30, 15, 5, 0.5);
+
+  --font-display: 'Shrikhand', 'Arial Black', 'Helvetica Neue', sans-serif;
+  --font-ui: 'Figtree', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #3d281a;
+    --ink: #f6e9d6;
+    --danger: #ff5a4a;
+    --glass: rgba(255, 236, 210, 0.08);
+    --glass-wall: rgba(255, 236, 210, 0.16);
+    --glass-line: rgba(255, 228, 196, 0.42);
+    --glass-shine: rgba(255, 255, 255, 0.55);
+    --floor-shadow: rgba(0, 0, 0, 0.6);
+    --wood-tones: #4b3122 #43291c #523626 #3d2618 #483023;
+    --wood-hi: rgba(255, 210, 160, 0.1);
+    --wood-lo: rgba(0, 0, 0, 0.35);
+    --wood-grain: #1f130b;
+    --wood-grain-hi: #7a5236;
+    --wood-seam: #120a05;
+    --wood-seam-hi: rgba(255, 200, 150, 0.1);
+    --wood-knot: #24150c;
+    --wood-light: rgba(255, 190, 110, 0.14);
+    --wood-vignette: rgba(0, 0, 0, 0.5);
+    --sign: #f2dcb6;
+    --slate: #1e2621;
+    --slate-hi: #2c3730;
+    --frame: #6b4423;
+    --frame-dark: #2e1b0c;
+    --shelf-top: #5d3c23;
+    --shelf: #3c2515;
+    --shelf-dark: #24150a;
+    --paper: #efe5d2;
+    --paper-soft: #66503e;
+    --paper-line: #d5c4a5;
+    --scrim: rgba(10, 5, 2, 0.58);
+    --shadow: rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #3d281a;
+  --ink: #f6e9d6;
+  --danger: #ff5a4a;
+  --glass: rgba(255, 236, 210, 0.08);
+  --glass-wall: rgba(255, 236, 210, 0.16);
+  --glass-line: rgba(255, 228, 196, 0.42);
+  --glass-shine: rgba(255, 255, 255, 0.55);
+  --floor-shadow: rgba(0, 0, 0, 0.6);
+  --wood-tones: #4b3122 #43291c #523626 #3d2618 #483023;
+  --wood-hi: rgba(255, 210, 160, 0.1);
+  --wood-lo: rgba(0, 0, 0, 0.35);
+  --wood-grain: #1f130b;
+  --wood-grain-hi: #7a5236;
+  --wood-seam: #120a05;
+  --wood-seam-hi: rgba(255, 200, 150, 0.1);
+  --wood-knot: #24150c;
+  --wood-light: rgba(255, 190, 110, 0.14);
+  --wood-vignette: rgba(0, 0, 0, 0.5);
+  --sign: #f2dcb6;
+  --slate: #1e2621;
+  --slate-hi: #2c3730;
+  --frame: #6b4423;
+  --frame-dark: #2e1b0c;
+  --shelf-top: #5d3c23;
+  --shelf: #3c2515;
+  --shelf-dark: #24150a;
+  --paper: #efe5d2;
+  --paper-soft: #66503e;
+  --paper-line: #d5c4a5;
+  --scrim: rgba(10, 5, 2, 0.58);
+  --shadow: rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+
+html {
+  height: 100%;
+  box-sizing: border-box;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.4;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
+}
+
+#wood {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  width: 100%;
+  max-width: 540px;
+  margin: 0 auto;
+  padding-inline: 16px;
+  padding-block: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  touch-action: none;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+:focus-visible {
+  outline: 3px solid var(--marigold);
+  outline-offset: 2px;
+}
+
+/* ---------- chalkboard scoreboard, which also holds the sound and new game buttons */
+.chalk {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 5px 10px 6px 12px;
+  border-radius: 10px;
+  border: 4px solid var(--frame);
+  background: radial-gradient(120% 100% at 15% 0%, var(--slate-hi), transparent 65%), var(--slate);
+  box-shadow: 0 0 0 1px var(--frame-dark), inset 0 2px 12px rgba(0, 0, 0, 0.4), 0 10px 18px -10px var(--shadow);
+  color: var(--chalk);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.label {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--chalk-soft);
+}
+
+.value {
+  display: inline-block;
+  font-weight: 800;
+  font-size: 1.45rem;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--chalk);
+  transform-origin: 0 70%;
+}
+
+.best {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--chalk-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-shake {
+  margin-left: auto;
+  align-items: center;
+  gap: 3px;
+}
+
+.stat-next {
+  align-items: center;
+  gap: 3px;
+}
+
+.value.bump {
+  animation: bump 0.28s ease-out;
+}
+
+@keyframes bump {
+  35% { transform: scale(1.12); color: var(--marigold); }
+}
+
+.shake-btn {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: var(--chalk-soft);
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.shake-ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.shake-ring circle {
+  fill: none;
+  stroke-width: 3;
+}
+
+.shake-ring .track {
+  stroke: var(--chalk-faint);
+}
+
+.shake-ring .fill {
+  stroke: var(--marigold);
+  stroke-linecap: round;
+  stroke-dasharray: 131.95;
+  stroke-dashoffset: 131.95;
+  transition: stroke-dashoffset 0.45s ease;
+}
+
+.shake-icon {
+  position: relative;
+  width: 19px;
+  height: 19px;
+}
+
+.shake-btn.ready,
+.shake-btn.active {
+  background: var(--marigold);
+  color: var(--marigold-ink);
+}
+
+.shake-btn.ready .track,
+.shake-btn.active .track {
+  stroke: transparent;
+}
+
+.shake-btn.ready .fill,
+.shake-btn.active .fill {
+  stroke: var(--marigold-ink);
+  opacity: 0.35;
+}
+
+.shake-btn.active {
+  animation: rattle 0.18s linear infinite;
+}
+
+.shake-btn.pop {
+  animation: pop 0.55s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+@keyframes pop {
+  40% { transform: scale(1.22); }
+}
+
+@keyframes rattle {
+  25% { transform: rotate(-9deg); }
+  75% { transform: rotate(9deg); }
+}
+
+.shake-count {
+  position: absolute;
+  top: -4px;
+  right: -12px;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: var(--tomato);
+  color: var(--tomato-ink);
+  font: 800 0.6875rem/19px var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  box-shadow: 0 0 0 2.5px var(--slate);
+}
+
+.next-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 2px dashed var(--chalk-soft);
+  display: grid;
+  place-items: center;
+}
+
+.next-badge img {
+  width: 29px;
+  height: 29px;
+  display: block;
+}
+
+.chalk-tools {
+  display: flex;
+  gap: 6px;
+  padding-left: 8px;
+  margin-bottom: 3px;
+  border-left: 1.5px dashed var(--chalk-faint);
+}
+
+.chalk-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1.5px solid var(--chalk-faint);
+  background: transparent;
+  color: var(--chalk-soft);
+  cursor: pointer;
+}
+
+.chalk-btn:hover {
+  color: var(--chalk);
+  border-color: var(--chalk-soft);
+}
+
+.chalk-btn .i-off,
+.chalk-btn.is-muted .i-on {
+  display: none;
+}
+
+.chalk-btn.is-muted .i-off {
+  display: block;
+}
+
+/* ---------- the jug: runs nearly edge to edge and stands on the shelf */
+.stage {
+  position: relative;
+  z-index: 2;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-inline: -10px;
+  margin-bottom: -6px;
+  touch-action: none;
+  border-radius: 14px;
+}
+
+#board {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0 auto;
+  display: block;
+  touch-action: none;
+  will-change: transform;
+}
+
+.hint {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--jug-top, 0px) + var(--u, 3px) * 84.5);
+  transform: translate(-50%, -50%);
+  width: min(calc(var(--jug-w, 320px) * 0.72), 270px);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink);
+  pointer-events: none;
+}
+
+.hint p {
+  margin: 0;
+  text-wrap: balance;
+}
+
+.hint .hint-title {
+  margin-bottom: 4px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.4rem;
+  line-height: 1.15;
+}
+
+.banner {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--jug-top, 0px) + 2px);
+  transform: translateX(-50%);
+  z-index: 2;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 7px 16px 10px;
+  border-radius: 12px;
+  border: 4px solid var(--frame);
+  background: var(--slate);
+  color: var(--chalk);
+  box-shadow: 0 0 0 1px var(--frame-dark), 0 12px 20px -10px var(--shadow);
+  text-align: center;
+  pointer-events: none;
+}
+
+.banner p {
+  margin: 0;
+}
+
+.banner-title {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  line-height: 1.1;
+  color: var(--marigold);
+}
+
+.banner-sub {
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.banner-bar {
+  width: 100%;
+  min-width: 160px;
+  height: 5px;
+  margin-top: 6px;
+  border-radius: 3px;
+  background: var(--chalk-faint);
+  overflow: hidden;
+}
+
+.banner-bar span {
+  display: block;
+  height: 100%;
+  background: var(--marigold);
+  transform-origin: left center;
+}
+
+.toast {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--jug-top, 0px) + var(--u, 3px) * 33);
+  transform: translateX(-50%);
+  z-index: 2;
+  margin: 0;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 2px solid var(--marigold);
+  background: var(--slate);
+  color: var(--chalk);
+  font-weight: 700;
+  font-size: 0.875rem;
+  text-align: center;
+  box-shadow: 0 10px 18px -10px var(--shadow);
+  pointer-events: none;
+}
+
+.toast.show {
+  animation: toast 2s ease forwards;
+}
+
+@keyframes toast {
+  0% { opacity: 0; transform: translate(-50%, 8px); }
+  12%, 80% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -6px); }
+}
+
+/* ---------- paper cards with a gingham edge */
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: var(--scrim);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  animation: fade 0.25s ease-out;
+}
+
+@keyframes fade {
+  from { opacity: 0; }
+}
+
+.card {
+  position: relative;
+  overflow: hidden;
+  width: min(100%, 320px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 32px 22px 20px;
+  border-radius: 16px;
+  background: var(--paper);
+  color: var(--paper-ink);
+  box-shadow: 0 24px 48px -18px var(--shadow);
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 14px;
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(90deg, var(--gingham) 50%, transparent 50%),
+    linear-gradient(var(--gingham) 50%, transparent 50%);
+  background-size: 14px 14px;
+}
+
+.card p {
+  margin: 0;
+}
+
+.card :focus-visible {
+  outline-color: var(--enamel-rim);
+}
+
+.card-title {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 2.1rem;
+  line-height: 1.05;
+  color: var(--tomato);
+  text-wrap: balance;
+}
+
+.card-title.small {
+  font-size: 1.65rem;
+}
+
+.card-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--paper-soft);
+}
+
+.card-score {
+  font-weight: 800;
+  font-size: 3.1rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.card-best {
+  font-weight: 600;
+  color: var(--paper-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.card-new {
+  font-weight: 800;
+  color: var(--tomato);
+}
+
+.card-fruit {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0 12px;
+  padding-top: 12px;
+  border-top: 2px dashed var(--paper-line);
+  font-weight: 600;
+}
+
+.card-fruit img {
+  width: 36px;
+  height: 36px;
+  flex: none;
+}
+
+.card-text {
+  margin-bottom: 14px !important;
+  max-width: 34ch;
+  color: var(--paper-soft);
+  font-weight: 500;
+}
+
+.card-actions {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.btn {
+  flex: 1 1 auto;
+  min-height: 46px;
+  padding: 0 18px;
+  border-radius: 12px;
+  border: 2px solid var(--paper-line);
+  background: transparent;
+  color: var(--paper-ink);
+  font: 700 1rem/1 var(--font-ui);
+  cursor: pointer;
+}
+
+.btn.primary {
+  background: var(--tomato);
+  border-color: var(--tomato);
+  color: var(--tomato-ink);
+  box-shadow: 0 3px 0 var(--frame-dark);
+}
+
+.btn.primary:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--frame-dark);
+}
+
+#again {
+  width: 100%;
+}
+
+/* ---------- timber shelf: the name painted on the left, the fruit lineup to the right */
+.shelf {
+  --base: clamp(16px, 5.6vw, 26px);
+  position: relative;
+  z-index: 1;
+  margin-inline: -10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 6px 14px;
+  border-radius: 4px 4px 8px 8px;
+  background: linear-gradient(180deg, var(--shelf-top) 0 6px, var(--frame-dark) 6px 7px, var(--shelf) 7px, var(--shelf-dark));
+  box-shadow: 0 14px 20px -12px var(--shadow), inset 0 1px 0 var(--wood-seam-hi);
+}
+
+.wordmark {
+  flex: none;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.05rem;
+  line-height: 1;
+  color: var(--sign);
+  text-shadow: 0 1px 0 var(--sign-shadow);
+  white-space: nowrap;
+}
+
+.ladder {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px;
+}
+
+.ladder img {
+  width: calc(var(--base) * var(--k, 1));
+  height: auto;
+  aspect-ratio: 1;
+  min-width: 0;
+  max-width: 100%;
+  flex: 0 1 auto;
+  filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.35));
+  transition: opacity 0.35s, filter 0.35s, transform 0.35s;
+}
+
+.ladder img.locked {
+  opacity: 0.35;
+  filter: grayscale(0.9);
+}
+
+.ladder img.top {
+  transform: scale(1.14);
+}
+
+@media (max-height: 560px) {
+  .app { gap: 4px; padding-block: 4px 5px; }
+  .chalk { padding: 3px 8px 4px 10px; }
+  .value { font-size: 1.2rem; }
+  .shake-btn, .next-badge { width: 32px; height: 32px; }
+  .next-badge img { width: 24px; height: 24px; }
+  .chalk-btn { width: 28px; height: 28px; }
+  .shelf { --base: clamp(14px, 4.8vw, 22px); padding-top: 9px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .value.bump,
+  .overlay,
+  .shake-btn.active,
+  .shake-btn.pop,
+  .toast.show {
+    animation: none;
+  }
+  .ladder img,
+  .shake-ring .fill {
+    transition: none;
+  }
+}
+
+[hidden] {
+  display: none !important;
+}

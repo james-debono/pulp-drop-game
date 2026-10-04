@@ -1,0 +1,18 @@
+{
+  "name": "Pulp Drop",
+  "short_name": "Pulp Drop",
+  "description": "Drop fruit slices into a glass jug, merge matching pairs up to a watermelon and keep the pile under the MAX line.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#4a2c15",
+  "theme_color": "#4a2c15",
+  "categories": ["games"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
