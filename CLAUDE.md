@@ -5,7 +5,7 @@ A fruit-merge drop game (the Suika-style mechanic, with original code, art, soun
 ## Where it lives
 
 - Live site: https://james-debono.github.io/pulp-drop-game/ (GitHub Pages, `main` branch, `/docs` folder). Repo: `james-debono/pulp-drop-game`, public.
-- An older copy lives as a Claude artifact (https://claude.ai/artifact/PoW311Gbx4Afz7dR8eGup7). It is no longer kept in sync, so don't republish it after changes. The site is the only copy that matters.
+- The site is the only copy. The old Claude artifact version was deleted, so there is nothing else to keep in sync.
 
 ## Build, test, ship
 
