@@ -133,4 +133,53 @@ const results = {};
   results.play = { drops, score, maxTier: TIERS[maxTier].name, seconds: +t.toFixed(1), maxBodies, maxLandedSpeed: +maxLandedSpeed.toFixed(1), ejected, worstStepMs: +worstStep.toFixed(3), final: stats(w) };
 }
 
+// 6. Grow power: a lime beside a lemon grows into a lemon, then the pair merges into a kiwi.
+{
+  const w = E.createWorld();
+  E.addBody(w, 3, 40, H - 7);
+  const lime = E.addBody(w, 2, 40 + 7 + 5.8 + 0.5, H - 5.8);
+  const ev = run(w, 1);
+  const mergesBefore = ev.filter((e) => e.type === 'merge').length;
+  const grew = E.growBody(lime);
+  run(w, 2, ev);
+  const merges = ev.filter((e) => e.type === 'merge').map((e) => TIERS[e.tier].name);
+  const melon = E.addBody(E.createWorld(), TIERS.length - 1, 50, 50);
+  results.grow = { mergesBefore, grew, merges, bodies: w.bodies.map((b) => TIERS[b.tier].name), watermelonGrows: E.growBody(melon) };
+}
+
+// 7. Powers on a full jug: grow a fruit in the middle of the pile, bomb the lowest fruit bigger
+// than a cherry and clear every blueberry, then check the pile settles cleanly.
+{
+  const w = E.createWorld();
+  for (let k = 0; k < 45; k++) {
+    const tier = Math.floor(rand() * 5);
+    const r = TIERS[tier].r;
+    E.addBody(w, tier, r + rand() * (W - 2 * r), -20);
+    run(w, 0.35);
+  }
+  run(w, 4);
+  const before = w.bodies.length;
+  const ev = [];
+  const dist = (b) => Math.hypot(b.x - W / 2, b.y - H * 0.75);
+  const mid = w.bodies.filter((b) => b.tier < TIERS.length - 1).sort((a, b) => dist(a) - dist(b))[0];
+  const grownFrom = TIERS[mid.tier].name;
+  E.growBody(mid);
+  run(w, 1, ev);
+  const low = w.bodies.filter((b) => b.tier >= 2).reduce((p, q) => (q.y > p.y ? q : p));
+  E.removeBodies(w, [low]);
+  run(w, 1, ev);
+  const berries = w.bodies.filter((b) => b.tier === 0);
+  E.removeBodies(w, berries);
+  run(w, 4, ev);
+  results.powers = {
+    before,
+    grownFrom,
+    bombed: TIERS[low.tier].name,
+    cleared: berries.length,
+    blueberriesLeft: w.bodies.filter((b) => b.tier === 0).length,
+    lost: ev.filter((e) => e.type === 'lost').length,
+    final: stats(w),
+  };
+}
+
 console.log(JSON.stringify(results, null, 2));

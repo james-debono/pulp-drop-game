@@ -77,11 +77,13 @@ const PulpEngine = (() => {
     };
   }
 
+  const massOf = (rt) => Math.pow(rt, CFG.massExponent) * 0.01;
+
   function addBody(world, tier, x, y, opts) {
     const o = opts || {};
     const rt = TIERS[tier].r;
     const r = o.r != null ? Math.min(Math.max(o.r, 0.5), rt) : rt;
-    const m = Math.pow(rt, CFG.massExponent) * 0.01;
+    const m = massOf(rt);
     const I = 0.5 * m * rt * rt;
     const a = o.a || 0;
     const b = {
@@ -112,6 +114,27 @@ const PulpEngine = (() => {
   function removeDead(world) {
     world.bodies = world.bodies.filter((b) => !b.dead);
     world.order = world.order.filter((b) => !b.dead);
+  }
+
+  // Takes bodies out of the jug (the bomb and clear powers).
+  function removeBodies(world, list) {
+    for (const b of list) b.dead = true;
+    removeDead(world);
+  }
+
+  // Turns a body into the next tier where it sits. It swells to the new size the way a merge
+  // does, and touching a neighbour of its new tier merges as usual.
+  function growBody(b) {
+    if (b.tier >= TIERS.length - 1) return false;
+    const tier = b.tier + 1;
+    const rt = TIERS[tier].r;
+    const m = massOf(rt);
+    b.tier = tier;
+    b.rt = rt;
+    b.invM = 1 / m;
+    b.invI = 1 / (0.5 * m * rt * rt);
+    b.grow = (rt - b.r) / CFG.growTime;
+    return true;
   }
 
   function contactAt(world, i) {
@@ -501,5 +524,5 @@ const PulpEngine = (() => {
     }
   }
 
-  return { W, H, TIERS, CFG, createWorld, addBody, step, landingY, serialize, restore };
+  return { W, H, TIERS, CFG, createWorld, addBody, removeBodies, growBody, step, landingY, serialize, restore };
 })();

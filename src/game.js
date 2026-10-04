@@ -1,4 +1,4 @@
-// Pulp Drop game layer: input, rules, rendering, sound, the shake power-up and saving.
+// Pulp Drop game layer: input, rules, rendering, sound, the four powers and saving.
 (() => {
   'use strict';
   const E = PulpEngine;
@@ -20,11 +20,15 @@
   const POP_TIME = 0.26;
   const DROP_WEIGHTS = [5, 5, 4, 3, 3];
 
-  // Shake power-up
-  const BONUS_SHAKES = 0; // free shakes at the start of every game
-  const SHAKE_EVERY = 500; // points per shake earned
+  // Powers: one is earned every POWER_EVERY points and can be spent on Shake, Clear, Bomb or Grow
+  const BONUS_POWERS = 0; // free powers at the start of every game
+  const POWER_EVERY = 500; // points per power earned
+  const SETTLE = 1.5; // MAX-line timer stays paused this long after any power
+  const PICK_SLOP = 16; // CSS px around a fruit that still counts as picking it
+  const PLURAL = ['blueberries', 'cherries'];
+
+  // Shake
   const SHAKE_TIME = 5; // seconds a shake lasts
-  const SHAKE_SETTLE = 1.5; // MAX-line timer stays paused this long after a shake
   const SHAKE_X = 3200; // strongest sideways push, world units / s^2
   const SHAKE_UP = 1150; // strongest upward push
   const SHAKE_DOWN = 2000;
@@ -49,9 +53,14 @@
   const overEl = $('over');
   const confirmEl = $('confirm');
   const soundBtn = $('sound');
-  const shakeBtn = $('shake');
-  const shakeCount = $('shake-count');
-  const shakeRing = $('shake-ring');
+  const meterEl = $('meter');
+  const meterCount = $('meter-count');
+  const meterRing = $('meter-ring');
+  const powersEl = $('powers');
+  const powerBtns = Array.from(powersEl.querySelectorAll('.power'));
+  const promptEl = $('prompt');
+  const promptText = $('prompt-text');
+  const pickBtns = [$('pick-0'), $('pick-1')];
   const bannerEl = $('banner');
   const bannerFill = $('banner-fill');
   const toastEl = $('toast');
@@ -164,6 +173,22 @@
         tone(200, 90, 0.3, 'sine', 0.1);
       },
       rattle(k) { hiss(0.05, 0.04 + k * 0.1, 1700 + Math.random() * 1500, 2.5); },
+      ready() { tone(740, 990, 0.08, 'triangle', 0.08); },
+      boom() {
+        tone(150, 38, 0.5, 'sine', 0.4);
+        tone(95, 30, 0.35, 'triangle', 0.14, 0.02);
+        hiss(0.45, 0.32, 480, 0.5);
+        hiss(0.22, 0.14, 2400, 0.8, 0.02);
+      },
+      grow(tier) {
+        const f = 520 * Math.pow(2, -tier * 0.15);
+        tone(f, f * 2, 0.22, 'triangle', 0.16);
+        tone(f * 1.5, f * 3, 0.18, 'sine', 0.1, 0.08);
+      },
+      clear(n) {
+        for (let i = 0; i < Math.min(n, 8); i++) tone(900 + i * 90, 1300 + i * 90, 0.08, 'sine', 0.12, i * 0.045);
+        hiss(0.3, 0.1, 3000, 0.7);
+      },
     };
   })();
 
@@ -183,14 +208,18 @@
   let maxTier = 0;
   let drops = 0;
   let danger = 0;
-  let shakesUsed = 0;
+  let powersUsed = 0;
+  let settle = 0; // seconds left with the MAX-line timer paused after a power
+  let picking = null; // 'clear', 'bomb' or 'grow' while the jug waits for a fruit to be picked
+  let pickId = 0; // the fruit under the pointer while picking
+  let hoverTier = -1; // the tier under a hovered blueberry or cherry button
+  let pickPointer = null;
   let overTimer = null;
   let keyDir = 0;
 
   const shake = {
     active: false,
     t: 0,
-    settle: 0,
     jx: 0, jy: 0, vx: 0, vy: 0, // where the jug is pulled to on screen, CSS px
     tx: 0, ty: 0, // where your finger wants it
     pointer: null,
@@ -225,9 +254,10 @@
     const r = TIERS[tier == null ? 0 : tier].r;
     return clamp(x, r, W - r);
   };
-  const shakesEarned = () => Math.floor(score / SHAKE_EVERY);
-  const shakesTotal = () => BONUS_SHAKES + shakesEarned();
-  const shakesLeft = () => Math.max(0, shakesTotal() - shakesUsed);
+  const powersEarned = () => Math.floor(score / POWER_EVERY);
+  const powersTotal = () => BONUS_POWERS + powersEarned();
+  const powersLeft = () => Math.max(0, powersTotal() - powersUsed);
+  const nextPowerAt = () => (powersEarned() + 1) * POWER_EVERY;
 
   function setHeld(tier) {
     held = tier;
@@ -240,7 +270,6 @@
   function resetShake() {
     shake.active = false;
     shake.t = 0;
-    shake.settle = 0;
     shake.jx = shake.jy = shake.vx = shake.vy = shake.tx = shake.ty = 0;
     shake.pointer = null;
     bannerEl.hidden = true;
@@ -249,9 +278,11 @@
 
   function newGame() {
     resetShake();
+    stopPicking();
     world = E.createWorld();
     score = 0;
-    shakesUsed = 0;
+    powersUsed = 0;
+    settle = 0;
     bestAtStart = best;
     next = pickTier();
     setHeld(pickTier(3));
@@ -287,13 +318,14 @@
       maxTier,
       drops,
       over,
-      shakesUsed,
+      powersUsed,
     };
   }
 
   function restoreFrom(s) {
     if (!s || s.v !== 1 || !Array.isArray(s.bodies)) return false;
     resetShake();
+    stopPicking();
     world = E.createWorld();
     E.restore(world, s.bodies);
     score = Number.isFinite(s.score) ? Math.max(0, s.score) : 0;
@@ -303,7 +335,9 @@
     aimX = Number.isFinite(s.aimX) ? s.aimX : W / 2;
     maxTier = Number.isInteger(s.maxTier) ? clamp(s.maxTier, 0, TIERS.length - 1) : 4;
     drops = Number.isInteger(s.drops) ? s.drops : world.bodies.length;
-    shakesUsed = Number.isInteger(s.shakesUsed) ? clamp(s.shakesUsed, 0, shakesTotal()) : 0;
+    const used = Number.isInteger(s.powersUsed) ? s.powersUsed : s.shakesUsed; // older saves only had shakes
+    powersUsed = Number.isInteger(used) ? clamp(used, 0, powersTotal()) : 0;
+    settle = 0;
     over = !!s.over;
     paused = false;
     cooldown = 0;
@@ -339,7 +373,7 @@
 
   // ---------------------------------------------------------------- rules
   function drop() {
-    if (over || paused || held == null || shake.active) return;
+    if (over || paused || held == null || shake.active || picking) return;
     const tier = held;
     const r = TIERS[tier].r;
     E.addBody(world, tier, clamp(aimX, r, W - r), HOLD_Y, { a: heldAngle, w: (Math.random() - 0.5) * 1.5 });
@@ -352,26 +386,27 @@
   }
 
   function addScore(points) {
-    const before = shakesEarned();
+    const before = powersEarned();
     score += points;
-    if (shakesEarned() > before) {
-      toast(shakesEarned() === 1 ? 'Shake earned. Tap the jar to use it.' : 'Another shake earned');
+    if (powersEarned() > before) {
+      toast(powersTotal() === 1 ? 'Power earned. Tap Shake, Clear, Bomb or Grow.' : 'Another power earned');
       Sound.earn();
       vibrate(20);
       if (!reduceMotion.matches) {
-        shakeBtn.classList.remove('pop');
-        void shakeBtn.offsetWidth;
-        shakeBtn.classList.add('pop');
+        meterEl.classList.remove('pop');
+        void meterEl.offsetWidth;
+        meterEl.classList.add('pop');
       }
     }
   }
 
   function tick() {
     updateShake(STEP);
+    if (settle > 0) settle = Math.max(0, settle - STEP);
     const events = [];
     E.step(world, STEP, events);
     for (let i = 0; i < events.length; i++) handle(events[i]);
-    const calm = shake.active || shake.settle > 0;
+    const calm = shake.active || settle > 0;
     let d = 0;
     const bodies = world.bodies;
     for (let i = 0; i < bodies.length; i++) {
@@ -435,17 +470,36 @@
     $('again').focus({ preventScroll: true });
   }
 
-  // ---------------------------------------------------------------- shake power-up
+  // ---------------------------------------------------------------- powers
+  // Every power comes out of the same pot. Shake starts straight away. Clear, Bomb and Grow
+  // freeze the jug until you pick a fruit or cancel, so there is no rush.
+  const canPick = (kind, b) => (kind === 'clear' ? b.tier <= 1 : kind === 'grow' ? b.tier < TIERS.length - 1 : true);
+
+  function usePower(kind) {
+    if (!world || over || paused || shake.active || picking) return;
+    Sound.init();
+    if (powersLeft() <= 0) {
+      toast(`Next power at ${fmt(nextPowerAt())} points`);
+      return;
+    }
+    if (kind === 'shake') {
+      startShake();
+      return;
+    }
+    if (!world.bodies.some((b) => canPick(kind, b))) {
+      toast(kind === 'clear' ? 'No blueberries or cherries to clear'
+        : kind === 'grow' && world.bodies.length ? 'Watermelons are as big as it gets'
+          : 'The jug is empty');
+      return;
+    }
+    startPicking(kind);
+  }
+
+  // ---------------------------------------------------------------- shake
   // While a shake runs, pressing anywhere and dragging moves the jug with your finger.
   // The fruit feel the jug's acceleration in reverse, so quick wiggles throw them around.
   function startShake() {
-    if (!world || over || paused || shake.active) return;
-    Sound.init();
-    if (shakesLeft() <= 0) {
-      toast(`Next shake at ${fmt((shakesEarned() + 1) * SHAKE_EVERY)} points`);
-      return;
-    }
-    shakesUsed++;
+    powersUsed++;
     shake.active = true;
     shake.t = 0;
     shake.tx = 0;
@@ -464,7 +518,7 @@
 
   function endShake() {
     shake.active = false;
-    shake.settle = SHAKE_SETTLE;
+    settle = SETTLE;
     shake.tx = 0;
     shake.ty = 0;
     shake.pointer = null;
@@ -493,10 +547,7 @@
       world.ax = 0;
       world.ay = 0;
     }
-    if (!shake.active) {
-      if (shake.settle > 0) shake.settle = Math.max(0, shake.settle - dt);
-      return;
-    }
+    if (!shake.active) return;
     shake.t += dt;
     const now = performance.now();
     const sign = world.ax > 700 ? 1 : world.ax < -700 ? -1 : 0;
@@ -510,6 +561,120 @@
 
   function updateBanner() {
     bannerFill.style.transform = `scaleX(${Math.max(0, 1 - shake.t / SHAKE_TIME).toFixed(3)})`;
+  }
+
+  // ---------------------------------------------------------------- clear, bomb and grow
+  function startPicking(kind) {
+    picking = kind;
+    pickId = 0;
+    hoverTier = -1;
+    pickPointer = null;
+    dragging = false;
+    activePointer = null;
+    keyDir = 0;
+    promptText.textContent = kind === 'clear' ? 'Clear all' : `${coarse.matches ? 'Tap' : 'Click'} a fruit to ${kind} it`;
+    pickBtns.forEach((btn, tier) => {
+      const n = world.bodies.filter((b) => b.tier === tier).length;
+      btn.hidden = kind !== 'clear';
+      btn.disabled = n === 0;
+      btn.querySelector('span').textContent = String(n);
+      btn.setAttribute('aria-label', `Clear ${n} ${n === 1 ? TIERS[tier].name.toLowerCase() : PLURAL[tier]}`);
+    });
+    updateTray();
+    stage.focus({ preventScroll: true });
+    Sound.ready();
+  }
+
+  function stopPicking() {
+    picking = null;
+    pickId = 0;
+    hoverTier = -1;
+    pickPointer = null;
+    updateTray();
+  }
+
+  // The fruit under the pointer, or failing that the nearest one within PICK_SLOP.
+  function fruitAt(e) {
+    const p = toWorld(e);
+    let found = null;
+    let bestD = PICK_SLOP / unitPx;
+    const bodies = world.bodies;
+    for (let i = 0; i < bodies.length; i++) {
+      const b = bodies[i];
+      if (!canPick(picking, b)) continue;
+      const d = Math.hypot(p.x - b.x, p.y - b.y) - b.r;
+      if (d < bestD) { bestD = d; found = b; }
+    }
+    return found;
+  }
+
+  function usePick(b) {
+    if (!picking || !b || !canPick(picking, b)) return;
+    if (picking === 'clear') {
+      clearTier(b.tier);
+      return;
+    }
+    if (picking === 'bomb') {
+      E.removeBodies(world, [b]);
+      splash(b.x, b.y, b.tier, b.tier, true);
+      Sound.boom();
+      jolt(1.6);
+      vibrate(40);
+    } else {
+      E.growBody(b);
+      b.pop = POP_TIME;
+      if (b.tier > maxTier) maxTier = b.tier;
+      splash(b.x, b.y, b.tier - 1, b.tier);
+      Sound.grow(b.tier);
+      if (b.tier >= 8) jolt(0.6 + (b.tier - 8) * 0.5);
+      vibrate(20);
+    }
+    finishPicking();
+  }
+
+  function clearTier(tier) {
+    if (picking !== 'clear') return;
+    const gone = world.bodies.filter((b) => b.tier === tier);
+    if (!gone.length) return;
+    E.removeBodies(world, gone);
+    for (const b of gone) splash(b.x, b.y, tier, tier);
+    Sound.clear(gone.length);
+    vibrate(25);
+    finishPicking();
+  }
+
+  function finishPicking() {
+    powersUsed++;
+    settle = SETTLE;
+    stopPicking();
+    updateHud();
+    save();
+  }
+
+  // Arrow keys step through the fruit the power can pick, left to right. Space or Enter uses it.
+  function pickKey(e) {
+    const k = e.key;
+    if (k === 'Escape') {
+      stopPicking();
+      e.preventDefault();
+      return;
+    }
+    const dir = k === 'ArrowLeft' || k === 'a' || k === 'A' ? -1 : k === 'ArrowRight' || k === 'd' || k === 'D' ? 1 : 0;
+    if (dir) {
+      const list = world.bodies.filter((b) => canPick(picking, b)).sort((p, q) => p.x - q.x || p.y - q.y);
+      if (list.length) {
+        const i = list.findIndex((b) => b.id === pickId);
+        const j = i < 0 ? (dir > 0 ? 0 : list.length - 1) : (i + dir + list.length) % list.length;
+        pickId = list[j].id;
+      }
+      e.preventDefault();
+      return;
+    }
+    const onButton = e.target && e.target.tagName === 'BUTTON';
+    if (!onButton && (k === ' ' || k === 'Enter' || k === 'ArrowDown' || k === 's' || k === 'S')) {
+      if (!e.repeat) usePick(world.bodies.find((b) => b.id === pickId));
+      e.preventDefault();
+    }
   }
 
   let toastTimer = null;
@@ -680,6 +845,7 @@
       img.style.setProperty('--k', (0.62 + (0.38 * i) / (TIERS.length - 1)).toFixed(3));
       ladderEl.appendChild(img);
     });
+    pickBtns.forEach((btn, tier) => { btn.querySelector('img').src = icons[tier]; });
   }
 
   let shownNext = -1;
@@ -706,19 +872,25 @@
       imgs[i].classList.toggle('locked', i > reach);
       imgs[i].classList.toggle('top', i === maxTier && i > 4);
     }
-    const left = shakesLeft();
-    const progress = (score % SHAKE_EVERY) / SHAKE_EVERY;
-    shakeRing.style.strokeDashoffset = (RING_LEN * (1 - progress)).toFixed(2);
-    shakeCount.hidden = left <= 0;
-    shakeCount.textContent = String(left);
-    shakeBtn.classList.toggle('ready', left > 0 && !shake.active);
-    shakeBtn.classList.toggle('active', shake.active);
-    shakeBtn.setAttribute('aria-disabled', left > 0 && !shake.active && !over ? 'false' : 'true');
-    shakeBtn.setAttribute('aria-label', shake.active
-      ? 'Shaking the jug'
-      : left > 0
-        ? `Shake the jug, ${left} ${left === 1 ? 'shake' : 'shakes'} left`
-        : `Shake the jug. Next shake at ${fmt((shakesEarned() + 1) * SHAKE_EVERY)} points`);
+    updateTray();
+  }
+
+  function updateTray() {
+    const left = powersLeft();
+    const progress = (score % POWER_EVERY) / POWER_EVERY;
+    meterRing.style.strokeDashoffset = (RING_LEN * (1 - progress)).toFixed(2);
+    meterCount.textContent = String(left);
+    meterEl.classList.toggle('ready', left > 0);
+    meterEl.setAttribute('aria-label', (left > 0 ? `${left} ${left === 1 ? 'power' : 'powers'} to spend` : 'No powers yet') +
+      `. Next one at ${fmt(nextPowerAt())} points`);
+    const usable = left > 0 && !over && !shake.active;
+    for (const btn of powerBtns) {
+      btn.classList.toggle('ready', usable);
+      btn.classList.toggle('active', btn.dataset.power === 'shake' && shake.active);
+      btn.setAttribute('aria-disabled', usable ? 'false' : 'true');
+    }
+    powersEl.hidden = !!picking;
+    promptEl.hidden = !picking;
   }
 
   function updateHint() {
@@ -777,7 +949,7 @@
   }
 
   function drawGuide(c) {
-    if (over || held == null || shake.active) return;
+    if (over || held == null || shake.active || picking) return;
     const r = TIERS[held].r;
     const x = clamp(aimX, r, W - r);
     const y = E.landingY(world, x, r);
@@ -816,6 +988,7 @@
 
   function drawBodies(c, alpha, tx, ty) {
     const bodies = world.bodies;
+    const fade = picking && picking !== 'bomb';
     for (let i = 0; i < bodies.length; i++) {
       const b = bodies[i];
       const x = b.px + (b.x - b.px) * alpha;
@@ -823,8 +996,11 @@
       const a = b.pa + (b.a - b.pa) * alpha;
       let k = b.r / b.rt;
       if (b.pop > 0) k *= 1 + 0.09 * Math.sin(Math.PI * (1 - b.pop / POP_TIME));
+      if (fade && !canPick(picking, b)) c.globalAlpha = 0.3;
       drawSprite(c, b.tier, x, y, a, k, tx, ty);
+      c.globalAlpha = 1;
     }
+    if (picking) drawPicks(c, tx, ty);
     if (danger > 0) {
       const t = performance.now() / 1000;
       c.setTransform(S, 0, 0, S, tx, ty);
@@ -840,6 +1016,41 @@
       }
       c.globalAlpha = 1;
     }
+  }
+
+  // Rings around what the current power would hit. The jug is frozen while picking, so bodies
+  // sit exactly at x, y.
+  function drawPicks(c, tx, ty) {
+    c.setTransform(S, 0, 0, S, tx, ty);
+    const pulse = 0.5 + 0.5 * Math.sin((performance.now() / 1000) * 6);
+    const target = pickId ? world.bodies.find((b) => b.id === pickId) : null;
+    const ring = (b, r) => {
+      c.beginPath();
+      c.arc(b.x, b.y, r, 0, TAU);
+      c.stroke();
+    };
+    c.strokeStyle = picking === 'bomb' ? colors.danger : colors.ink;
+    if (picking === 'clear') {
+      const tier = target ? target.tier : hoverTier;
+      for (const b of world.bodies) {
+        if (!canPick('clear', b)) continue;
+        const on = b.tier === tier;
+        c.globalAlpha = on ? 0.95 : 0.3 + 0.3 * pulse;
+        c.lineWidth = on ? 0.8 : 0.45;
+        ring(b, b.r + 0.9);
+      }
+    } else if (target && picking === 'bomb') {
+      c.globalAlpha = 0.65 + 0.35 * pulse;
+      c.lineWidth = 0.8;
+      ring(target, target.r + 0.9);
+    } else if (target) {
+      c.globalAlpha = 0.95;
+      c.lineWidth = 0.55;
+      c.setLineDash([1.4, 1.1]);
+      ring(target, TIERS[target.tier + 1].r + 0.3);
+      c.setLineDash([]);
+    }
+    c.globalAlpha = 1;
   }
 
   function drawFx(c) {
@@ -983,7 +1194,7 @@
   }
 
   function drawHeld(c, bx, by) {
-    if (over || held == null) return;
+    if (over || held == null || picking) return;
     const r = TIERS[held].r;
     const x = clamp(aimX, r, W - r);
     let k = 1;
@@ -1005,7 +1216,7 @@
     if (!(dt > 0)) dt = 0;
     if (dt > 0.1) dt = 0.1;
     if (!paused && world) {
-      if (!over) {
+      if (!over && !picking) {
         if (keyDir && !shake.active) aimX = clampAim(aimX + keyDir * 80 * dt, held);
         if (held == null && cooldown > 0 && !shake.active) {
           cooldown -= dt;
@@ -1029,7 +1240,7 @@
       }
       updateFx(dt);
     }
-    render(over || paused ? 1 : acc / STEP);
+    render(over || paused || picking ? 1 : acc / STEP);
     requestAnimationFrame(frame);
   }
 
@@ -1054,21 +1265,47 @@
 
   const inOverlay = (el) => !!(el && el.closest && el.closest('.overlay'));
 
+  // While picking, pressing highlights the nearest fruit, sliding moves the highlight and
+  // letting go uses the power on it.
   stage.addEventListener('pointerdown', (e) => {
     if (inOverlay(e.target) || e.button > 0) return;
     Sound.init();
     if (over || paused || shake.active) return;
     try { stage.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
     e.preventDefault();
+    if (picking) {
+      pickPointer = e.pointerId;
+      const b = fruitAt(e);
+      pickId = b ? b.id : 0;
+      return;
+    }
     dragging = true;
     activePointer = e.pointerId;
     aimFromEvent(e);
   });
   stage.addEventListener('pointermove', (e) => {
     if (inOverlay(e.target) || over || paused || shake.active) return;
+    if (picking) {
+      if (e.pointerType === 'mouse' || e.pointerId === pickPointer) {
+        const b = fruitAt(e);
+        pickId = b ? b.id : 0;
+      }
+      return;
+    }
     if (e.pointerType === 'mouse' || (dragging && e.pointerId === activePointer)) aimFromEvent(e);
   });
+  stage.addEventListener('pointerleave', (e) => {
+    if (picking && e.pointerType === 'mouse' && pickPointer == null) pickId = 0;
+  });
   const release = (e) => {
+    if (picking) {
+      if (e.pointerId !== pickPointer) return;
+      pickPointer = null;
+      const b = e.type === 'pointerup' ? fruitAt(e) : null;
+      if (b) usePick(b);
+      else if (e.pointerType !== 'mouse') pickId = 0;
+      return;
+    }
     if (!dragging || e.pointerId !== activePointer) return;
     dragging = false;
     activePointer = null;
@@ -1108,9 +1345,13 @@
   stage.addEventListener('contextmenu', (e) => e.preventDefault());
 
   window.addEventListener('keydown', (e) => {
+    if (!overEl.hidden || !confirmEl.hidden || inOverlay(e.target)) return;
+    if (picking) {
+      pickKey(e);
+      return;
+    }
     const tag = e.target && e.target.tagName;
-    if (tag === 'BUTTON' || tag === 'INPUT' || inOverlay(e.target)) return;
-    if (!overEl.hidden || !confirmEl.hidden) return;
+    if (tag === 'BUTTON' || tag === 'INPUT') return;
     const k = e.key;
     if (k === 'ArrowLeft' || k === 'a' || k === 'A') { keyDir = -1; e.preventDefault(); }
     else if (k === 'ArrowRight' || k === 'd' || k === 'D') { keyDir = 1; e.preventDefault(); }
@@ -1119,7 +1360,7 @@
       if (!e.repeat) drop();
       e.preventDefault();
     } else if ((k === 'x' || k === 'X') && !e.repeat) {
-      startShake();
+      usePower('shake');
     }
   });
   window.addEventListener('keyup', (e) => {
@@ -1142,7 +1383,15 @@
     syncSoundButton();
   });
 
-  shakeBtn.addEventListener('click', startShake);
+  for (const btn of powerBtns) btn.addEventListener('click', () => usePower(btn.dataset.power));
+  pickBtns.forEach((btn, tier) => {
+    btn.addEventListener('click', () => clearTier(tier));
+    btn.addEventListener('pointerenter', () => { hoverTier = tier; });
+    btn.addEventListener('pointerleave', () => { hoverTier = -1; });
+    btn.addEventListener('focus', () => { hoverTier = tier; });
+    btn.addEventListener('blur', () => { hoverTier = -1; });
+  });
+  $('cancel').addEventListener('click', stopPicking);
 
   $('restart').addEventListener('click', () => {
     if (over || drops === 0) { newGame(); return; }
@@ -1168,15 +1417,11 @@
   setInterval(() => { if (world && !paused) save(); }, 4000);
 
   // ---------------------------------------------------------------- boot
-  let started = false;
-  function start(data) {
-    if (started) return;
-    started = true;
+  function start() {
     readColors();
     buildIcons();
     syncSoundButton();
-    const fromHot = data && data.game;
-    if (!(fromHot && restoreFrom(data.game)) && !restoreFrom(loadSaved())) newGame();
+    if (!restoreFrom(loadSaved())) newGame();
     const themeQuery = window.matchMedia('(prefers-color-scheme: dark)');
     if (themeQuery.addEventListener) themeQuery.addEventListener('change', readColors);
     new MutationObserver(readColors).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] });
@@ -1191,8 +1436,5 @@
     requestAnimationFrame(frame);
   }
 
-  const hot = window.claude && window.claude.hot;
-  if (hot && hot.snapshot) hot.snapshot(() => ({ game: world ? snapshot() : null }));
-  if (hot && hot.ready) hot.ready(start);
-  else start((hot && hot.data) || {});
+  start();
 })();

@@ -130,6 +130,8 @@
 html {
   height: 100%;
   box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 *,
@@ -153,6 +155,10 @@ body {
   user-select: none;
   -webkit-touch-callout: none;
   touch-action: none;
+}
+
+img {
+  max-width: 100%;
 }
 
 #wood {
@@ -197,17 +203,24 @@ body {
   outline-offset: 2px;
 }
 
-/* ---------- chalkboard scoreboard, which also holds the sound and new game buttons */
+/* ---------- chalkboard scoreboard, which also holds the sound and new game buttons and,
+   along the bottom, the tray of powers */
 .chalk {
   display: flex;
-  align-items: flex-end;
-  gap: 10px;
+  flex-direction: column;
+  gap: 6px;
   padding: 5px 10px 6px 12px;
   border-radius: 10px;
   border: 4px solid var(--frame);
   background: radial-gradient(120% 100% at 15% 0%, var(--slate-hi), transparent 65%), var(--slate);
   box-shadow: 0 0 0 1px var(--frame-dark), inset 0 2px 12px rgba(0, 0, 0, 0.4), 0 10px 18px -10px var(--shadow);
   color: var(--chalk);
+}
+
+.chalk-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
 }
 
 .stat {
@@ -244,7 +257,7 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-.stat-shake {
+.stat-powers {
   margin-left: auto;
   align-items: center;
   gap: 3px;
@@ -263,22 +276,19 @@ body {
   35% { transform: scale(1.12); color: var(--marigold); }
 }
 
-.shake-btn {
+/* The powers meter: how many powers are banked, ringed by progress to the next one */
+.meter {
   position: relative;
   width: 38px;
   height: 38px;
-  padding: 0;
-  border: 0;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: transparent;
   color: var(--chalk-soft);
-  cursor: pointer;
   transition: background-color 0.2s, color 0.2s;
 }
 
-.shake-ring {
+.meter-ring {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -286,16 +296,16 @@ body {
   transform: rotate(-90deg);
 }
 
-.shake-ring circle {
+.meter-ring circle {
   fill: none;
   stroke-width: 3;
 }
 
-.shake-ring .track {
+.meter-ring .track {
   stroke: var(--chalk-faint);
 }
 
-.shake-ring .fill {
+.meter-ring .fill {
   stroke: var(--marigold);
   stroke-linecap: round;
   stroke-dasharray: 131.95;
@@ -303,34 +313,27 @@ body {
   transition: stroke-dashoffset 0.45s ease;
 }
 
-.shake-icon {
+.meter-count {
   position: relative;
-  width: 19px;
-  height: 19px;
+  font: 800 1.05rem/1 var(--font-ui);
+  font-variant-numeric: tabular-nums;
 }
 
-.shake-btn.ready,
-.shake-btn.active {
+.meter.ready {
   background: var(--marigold);
   color: var(--marigold-ink);
 }
 
-.shake-btn.ready .track,
-.shake-btn.active .track {
+.meter.ready .track {
   stroke: transparent;
 }
 
-.shake-btn.ready .fill,
-.shake-btn.active .fill {
+.meter.ready .fill {
   stroke: var(--marigold-ink);
   opacity: 0.35;
 }
 
-.shake-btn.active {
-  animation: rattle 0.18s linear infinite;
-}
-
-.shake-btn.pop {
+.meter.pop {
   animation: pop 0.55s cubic-bezier(0.3, 1.6, 0.5, 1);
 }
 
@@ -341,22 +344,6 @@ body {
 @keyframes rattle {
   25% { transform: rotate(-9deg); }
   75% { transform: rotate(9deg); }
-}
-
-.shake-count {
-  position: absolute;
-  top: -4px;
-  right: -12px;
-  min-width: 19px;
-  height: 19px;
-  padding: 0 5px;
-  border-radius: 10px;
-  background: var(--tomato);
-  color: var(--tomato-ink);
-  font: 800 0.6875rem/19px var(--font-ui);
-  font-variant-numeric: tabular-nums;
-  text-align: center;
-  box-shadow: 0 0 0 2.5px var(--slate);
 }
 
 .next-badge {
@@ -407,6 +394,129 @@ body {
 
 .chalk-btn.is-muted .i-off {
   display: block;
+}
+
+/* The tray: four power buttons, which give way to a prompt while you pick a fruit.
+   Both states share one height so the jug never jumps. */
+.tray {
+  padding-top: 6px;
+  border-top: 1.5px dashed var(--chalk-faint);
+}
+
+.powers,
+.prompt {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.power {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  padding: 0 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border-radius: 10px;
+  border: 1.5px solid var(--chalk-faint);
+  background: transparent;
+  color: var(--chalk-soft);
+  font: 700 0.75rem/1 var(--font-ui);
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.power svg {
+  flex: none;
+  width: 17px;
+  height: 17px;
+}
+
+.power.ready {
+  border-color: var(--chalk-soft);
+  color: var(--chalk);
+}
+
+.power.ready svg {
+  color: var(--marigold);
+}
+
+.power.ready:hover {
+  border-color: var(--chalk);
+}
+
+.power.active {
+  background: var(--marigold);
+  border-color: var(--marigold);
+  color: var(--marigold-ink);
+}
+
+.power.active svg {
+  color: currentColor;
+  animation: rattle 0.18s linear infinite;
+}
+
+.prompt-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--chalk);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pick {
+  flex: none;
+  height: 100%;
+  padding: 0 11px 0 5px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 18px;
+  border: 1.5px solid var(--chalk-soft);
+  background: transparent;
+  color: var(--chalk);
+  font: 800 0.875rem/1 var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.pick img {
+  width: 26px;
+  height: 26px;
+  display: block;
+}
+
+.pick:hover {
+  border-color: var(--marigold);
+}
+
+.pick:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.cancel {
+  flex: none;
+  height: 100%;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1.5px solid var(--chalk-faint);
+  background: transparent;
+  color: var(--chalk-soft);
+  font: 700 0.75rem/1 var(--font-ui);
+  cursor: pointer;
+}
+
+.cancel:hover {
+  color: var(--chalk);
+  border-color: var(--chalk-soft);
 }
 
 /* ---------- the jug: runs nearly edge to edge and stands on the shelf */
@@ -760,24 +870,33 @@ body {
 
 @media (max-height: 560px) {
   .app { gap: 4px; padding-block: 4px 5px; }
-  .chalk { padding: 3px 8px 4px 10px; }
+  .chalk { gap: 4px; padding: 3px 8px 4px 10px; }
   .value { font-size: 1.2rem; }
-  .shake-btn, .next-badge { width: 32px; height: 32px; }
+  .meter, .next-badge { width: 32px; height: 32px; }
+  .meter-count { font-size: 0.9375rem; }
   .next-badge img { width: 24px; height: 24px; }
   .chalk-btn { width: 28px; height: 28px; }
+  .tray { padding-top: 4px; }
+  .powers, .prompt { height: 30px; }
+  .pick img { width: 22px; height: 22px; }
   .shelf { --base: clamp(14px, 4.8vw, 22px); padding-top: 9px; }
+}
+
+@media (max-width: 350px) {
+  .power { gap: 3px; padding: 0 3px; font-size: 0.6875rem; }
+  .power svg { width: 14px; height: 14px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .value.bump,
   .overlay,
-  .shake-btn.active,
-  .shake-btn.pop,
+  .meter.pop,
+  .power.active svg,
   .toast.show {
     animation: none;
   }
   .ladder img,
-  .shake-ring .fill {
+  .meter-ring .fill {
     transition: none;
   }
 }

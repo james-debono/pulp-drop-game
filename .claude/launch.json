@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "pulp-drop",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8137", "--bind", "127.0.0.1", "--directory", "docs"],
+      "port": 8137,
+      "url": "http://localhost:8137"
+    }
+  ]
+}
