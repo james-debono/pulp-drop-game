@@ -2,7 +2,7 @@
 
 A fruit-merge drop game set in a timber kitchen. Drop fruit slices into a glass jug, merge matching pairs up the chain from blueberry to watermelon, and keep the pile under the MAX line.
 
-**Play:** https://james-debono.github.io/pulp-drop/
+**Play:** https://james-debono.github.io/pulp-drop-game/
 
 On Android, open the link in Chrome, then tap the three-dot menu, **Install and create shortcut**, **Install**. It gets its own icon, opens full screen and works offline after the first load.
 

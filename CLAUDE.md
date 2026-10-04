@@ -4,7 +4,7 @@ A fruit-merge drop game (the Suika-style mechanic, with original code, art, soun
 
 ## Where it lives
 
-- Live site: https://james-debono.github.io/pulp-drop/ (GitHub Pages, `main` branch, `/docs` folder). Repo: `james-debono/pulp-drop`, public.
+- Live site: https://james-debono.github.io/pulp-drop-game/ (GitHub Pages, `main` branch, `/docs` folder). Repo: `james-debono/pulp-drop-game`, public.
 - Claude artifact with the same game, playable inside Claude: https://claude.ai/artifact/PoW311Gbx4Afz7dR8eGup7. After a change, republish `dist/pulp-drop.html` to that URL from a Claude session that has the Artifact tool, so both copies stay in sync.
 
 ## Build, test, ship
@@ -17,8 +17,8 @@ A fruit-merge drop game (the Suika-style mechanic, with original code, art, soun
 
 ### First-time setup (only if the GitHub repo doesn't exist yet)
 
-- `git init -b main`, commit everything, then `gh repo create pulp-drop --public --source . --push`.
-- Turn on Pages from `main` and `/docs`: `gh api -X POST repos/james-debono/pulp-drop/pages -f "source[branch]=main" -f "source[path]=/docs"`, or on github.com: Settings > Pages > Deploy from a branch > `main` > `/docs`.
+- `git init -b main`, commit everything, then `gh repo create pulp-drop-game --public --source . --push`.
+- Turn on Pages from `main` and `/docs`: `gh api -X POST repos/james-debono/pulp-drop-game/pages -f "source[branch]=main" -f "source[path]=/docs"`, or on github.com: Settings > Pages > Deploy from a branch > `main` > `/docs`.
 
 ## Architecture
 
